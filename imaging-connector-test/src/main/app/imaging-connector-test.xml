@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:imaging="http://www.mulesoft.org/schema/mule/imaging" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/imaging http://www.mulesoft.org/schema/mule/imaging/current/mule-imaging.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    
+    <file:connector name="File" autoDelete="true" streaming="true" validateConnections="true" doc:name="File"/>
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    
+    <flow name="imaging-connector-testFlow" initialState="stopped">
+        <file:inbound-endpoint path="src/main/resources" connector-ref="File" pollingFrequency="5000" responseTimeout="10000" doc:name="File">
+            <file:filename-regex-filter pattern="lena_color.gif" caseSensitive="true"/>
+        </file:inbound-endpoint>
+    
+        <imaging:read doc:name="Read"/>
+        <enricher target="#[flowVars.dimensions]" doc:name="Message Enricher">
+            <imaging:dimensions doc:name="Calculate dimensions"/>
+        </enricher>
+        <logger message="Image Dimensions: #[flowVars.dimensions]" level="INFO" doc:name="Logger"/>
+ 		<imaging:gray-scale doc:name="Convert 2 Gray Scale"/>
+        <imaging:write format="PNG" doc:name="Write"/>
+        <file:outbound-endpoint path="src/main/resources/" outputPattern="lena_bw.png" connector-ref="File" responseTimeout="10000" doc:name="File"/>
+    </flow>
+    <flow name="imaging-connector-testFlow1">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/gray-scale" doc:name="HTTP"/>
+        <imaging:read doc:name="Read"/>
+ 		<imaging:gray-scale doc:name="Convert 2 Gray Scale"/>
+        <imaging:write format="PNG" doc:name="Write"/>
+    </flow>
+</mule>
